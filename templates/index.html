@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Image Lab - Image Processing Dashboard</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --sidebar-width: 320px;
+            --primary-color: #6366f1;
+            --primary-hover: #4f46e5;
+        }
+        
+        body {
+            background-color: #f8fafc;
+            min-height: 100vh;
+        }
+        
+        /* Sidebar Styles */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+            min-height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .sidebar-header h4 {
+            color: #fff;
+            margin: 0;
+            font-weight: 600;
+        }
+        
+        .sidebar-header small {
+            color: #94a3b8;
+        }
+        
+        /* Accordion Styles */
+        .sidebar .accordion-item {
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .sidebar .accordion-button {
+            background: transparent;
+            color: #e2e8f0;
+            font-weight: 500;
+            padding: 1rem 1.5rem;
+            box-shadow: none;
+        }
+        
+        .sidebar .accordion-button:not(.collapsed) {
+            background: rgba(99, 102, 241, 0.1);
+            color: #a5b4fc;
+        }
+        
+        .sidebar .accordion-button::after {
+            filter: invert(1);
+        }
+        
+        .sidebar .accordion-body {
+            background: rgba(0,0,0,0.2);
+            padding: 1rem 1.5rem;
+        }
+        
+        /* Form Controls in Sidebar */
+        .sidebar .form-label {
+            color: #94a3b8;
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .sidebar .form-range {
+            accent-color: var(--primary-color);
+        }
+        
+        .sidebar .btn-process {
+            background: var(--primary-color);
+            border: none;
+            color: white;
+            padding: 0.6rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .sidebar .btn-process:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+        
+        .sidebar .btn-process:disabled {
+            background: #475569;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .range-value {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        /* Main Content */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            padding: 2rem;
+        }
+        
+        .page-header {
+            margin-bottom: 2rem;
+        }
+        
+        .page-header h1 {
+            color: #1e293b;
+            font-weight: 700;
+        }
+        
+        /* Image Cards */
+        .image-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+            overflow: hidden;
+            height: 100%;
+        }
+        
+        .image-card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 1.5rem;
+            font-weight: 600;
+        }
+        
+        .image-card-header.processed {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+        
+        .image-card-body {
+            padding: 1.5rem;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f1f5f9;
+        }
+        
+        .image-card-body img {
+            max-width: 100%;
+            max-height: 500px;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+        
+        .placeholder-content {
+            text-align: center;
+            color: #94a3b8;
+        }
+        
+        .placeholder-content i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        
+        /* Upload Section */
+        .upload-section {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .upload-area {
+            border: 2px dashed rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .upload-area:hover {
+            border-color: var(--primary-color);
+            background: rgba(99, 102, 241, 0.1);
+        }
+        
+        .upload-area.has-image {
+            border-color: #38ef7d;
+            background: rgba(56, 239, 125, 0.1);
+        }
+        
+        .upload-area i {
+            font-size: 2.5rem;
+            color: #64748b;
+            margin-bottom: 0.5rem;
+        }
+        
+        .upload-area.has-image i {
+            color: #38ef7d;
+        }
+        
+        .upload-area p {
+            color: #94a3b8;
+            margin: 0;
+            font-size: 0.9rem;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        /* Session Controls */
+        .session-controls {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .btn-reset {
+            background: #f59e0b;
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            flex: 1;
+            transition: all 0.2s;
+        }
+        
+        .btn-reset:hover {
+            background: #d97706;
+            color: white;
+        }
+        
+        .btn-clear {
+            background: #ef4444;
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            flex: 1;
+            transition: all 0.2s;
+        }
+        
+        .btn-clear:hover {
+            background: #dc2626;
+            color: white;
+        }
+        
+        .btn-undo {
+            background: #8b5cf6;
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            flex: 1;
+            transition: all 0.2s;
+        }
+        
+        .btn-undo:hover {
+            background: #7c3aed;
+            color: white;
+        }
+        
+        .btn-undo:disabled {
+            background: #475569;
+            cursor: not-allowed;
+        }
+        
+        /* Operations History */
+        .operations-history {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .operations-history h6 {
+            color: #94a3b8;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.75rem;
+        }
+        
+        .operation-tag {
+            display: inline-block;
+            background: rgba(99, 102, 241, 0.2);
+            color: #a5b4fc;
+            padding: 0.25rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin: 0.2rem;
+        }
+        
+        .operation-tag:first-child::before {
+            content: "1. ";
+        }
+        
+        .operations-list {
+            counter-reset: op-counter;
+        }
+        
+        .operations-list .operation-tag {
+            counter-increment: op-counter;
+        }
+        
+        .operations-list .operation-tag::before {
+            content: counter(op-counter) ". ";
+        }
+        
+        /* Alert Styles */
+        .alert-container {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1100;
+            max-width: 400px;
+        }
+        
+        /* Download Button */
+        .btn-download {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            border: none;
+            color: white;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+        
+        .btn-download:hover {
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(17, 153, 142, 0.4);
+        }
+        
+        /* Status Badge */
+        .status-badge {
+            background: #22c55e;
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .status-badge.no-image {
+            background: #64748b;
+        }
+        
+        /* Responsive */
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 100%;
+                position: relative;
+                min-height: auto;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Flash Messages -->
+    <div class="alert-container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else 'success' if category == 'success' else 'info' }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h4><i class="bi bi-image me-2"></i>Image Lab</h4>
+            <small>Online Image Processing</small>
+        </div>
+        
+        <!-- Upload Section -->
+        <div class="upload-section">
+            <form action="/upload" method="POST" enctype="multipart/form-data" id="uploadForm">
+                <div class="upload-area {{ 'has-image' if has_session else '' }}" onclick="document.getElementById('imageInput').click()">
+                    <i class="bi {{ 'bi-check-circle' if has_session else 'bi-cloud-arrow-up' }}"></i>
+                    <p>{{ 'Image loaded - Click to replace' if has_session else 'Click to upload an image' }}</p>
+                </div>
+                <input type="file" name="image" class="file-input" id="imageInput" accept="image/*" onchange="document.getElementById('uploadForm').submit()">
+            </form>
+        </div>
+        
+        <!-- Session Controls (only show if image is loaded) -->
+        {% if has_session %}
+        <div class="session-controls">
+            <form action="/undo" method="POST" style="flex: 1;">
+                <button type="submit" class="btn btn-undo w-100" {{ 'disabled' if not operations_history else '' }}>
+                    <i class="bi bi-arrow-left me-1"></i>Undo
+                </button>
+            </form>
+            <form action="/reset" method="POST" style="flex: 1;">
+                <button type="submit" class="btn btn-reset w-100">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+                </button>
+            </form>
+            <form action="/clear" method="POST" style="flex: 1;">
+                <button type="submit" class="btn btn-clear w-100">
+                    <i class="bi bi-x-circle me-1"></i>Clear
+                </button>
+            </form>
+        </div>
+        
+        <!-- Operations History -->
+        {% if operations_history %}
+        <div class="operations-history">
+            <h6><i class="bi bi-clock-history me-1"></i>Applied Operations</h6>
+            <div class="operations-list">
+                {% for op in operations_history %}
+                    <span class="operation-tag">{{ op }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
+        
+        <!-- Tools Accordion -->
+        <div class="accordion" id="toolsAccordion">
+            <!-- Geometry Tools -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#geometryCollapse">
+                        <i class="bi bi-arrows-angle-expand me-2"></i>Geometry (Lab 4)
+                    </button>
+                </h2>
+                <div id="geometryCollapse" class="accordion-collapse collapse" data-bs-parent="#toolsAccordion">
+                    <div class="accordion-body">
+                        <!-- Resize -->
+                        <form action="/process" method="POST" class="mb-4">
+                            <input type="hidden" name="operation" value="resize">
+                            <label class="form-label">Resize Scale: <span class="range-value"><output id="scaleOutput">100</output>%</span></label>
+                            <input type="range" class="form-range" name="scale" min="10" max="200" value="100" oninput="scaleOutput.value=this.value">
+                            <button type="submit" class="btn btn-process w-100 mt-2" {{ 'disabled' if not has_session else '' }}>
+                                <i class="bi bi-aspect-ratio me-1"></i>Resize
+                            </button>
+                        </form>
+                        
+                        <!-- Rotate -->
+                        <form action="/process" method="POST">
+                            <input type="hidden" name="operation" value="rotate">
+                            <label class="form-label">Rotation Angle: <span class="range-value"><output id="angleOutput">0</output>°</span></label>
+                            <input type="range" class="form-range" name="angle" min="0" max="360" value="0" oninput="angleOutput.value=this.value">
+                            <button type="submit" class="btn btn-process w-100 mt-2" {{ 'disabled' if not has_session else '' }}>
+                                <i class="bi bi-arrow-clockwise me-1"></i>Rotate
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Enhancement Tools -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#enhancementCollapse">
+                        <i class="bi bi-brightness-high me-2"></i>Enhancement (Lab 5)
+                    </button>
+                </h2>
+                <div id="enhancementCollapse" class="accordion-collapse collapse" data-bs-parent="#toolsAccordion">
+                    <div class="accordion-body">
+                        <!-- Histogram Equalization -->
+                        <form action="/process" method="POST" class="mb-4">
+                            <input type="hidden" name="operation" value="hist_eq">
+                            <p class="text-muted small">Equalizes histogram for better contrast</p>
+                            <button type="submit" class="btn btn-process w-100" {{ 'disabled' if not has_session else '' }}>
+                                <i class="bi bi-bar-chart me-1"></i>Histogram Equalization
+                            </button>
+                        </form>
+                        
+                        <!-- Brightness -->
+                        <form action="/process" method="POST" class="mb-4">
+                            <input type="hidden" name="operation" value="brightness">
+                            <label class="form-label">Brightness: <span class="range-value"><output id="brightnessOutput">0</output></span></label>
+                            <input type="range" class="form-range" name="brightness_value" min="-100" max="100" value="0" oninput="brightnessOutput.value=this.value">
+                            <button type="submit" class="btn btn-process w-100 mt-2" {{ 'disabled' if not has_session else '' }}>
+                                <i class="bi bi-sun me-1"></i>Adjust Brightness
+                            </button>
+                        </form>
+                        
+                        <!-- Negative -->
+                        <form action="/process" method="POST">
+                            <input type="hidden" name="operation" value="negative">
+                            <p class="text-muted small">Inverts all colors (255 - pixel)</p>
+                            <button type="submit" class="btn btn-process w-100" {{ 'disabled' if not has_session else '' }}>
+                                <i class="bi bi-circle-half me-1"></i>Negative
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Filters (Restoration) Tools -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#filtersCollapse">
+                        <i class="bi bi-funnel me-2"></i>Filters (Lab 6)
+                    </button>
+                </h2>
+                <div id="filtersCollapse" class="accordion-collapse collapse" data-bs-parent="#toolsAccordion">
+                    <div class="accordion-body">
+                        <!-- Gaussian Blur -->
+                        <form action="/process" method="POST" class="mb-4">
+                            <input type="hidden" name="operation" value="blur_gaussian">
+                            <label class="form-label">Kernel Size: <span class="range-value"><output id="gaussianOutput">5</output></span></label>
+                            <input type="range" class="form-range" name="gaussian_kernel" min="1" max="31" step="2" value="5" oninput="gaussianOutput.value=this.value">
+                            <button type="submit" class="btn btn-process w-100 mt-2" {{ 'disabled' if not has_session else '' }}>
+                                <i class="bi bi-droplet me-1"></i>Gaussian Blur
+                            </button>
+                        </form>
+                        
+                        <!-- Median Blur -->
+                        <form action="/process" method="POST">
+                            <input type="hidden" name="operation" value="denoise_median">
+                            <label class="form-label">Kernel Size: <span class="range-value"><output id="medianOutput">5</output></span></label>
+                            <input type="range" class="form-range" name="median_kernel" min="1" max="31" step="2" value="5" oninput="medianOutput.value=this.value">
+                            <button type="submit" class="btn btn-process w-100 mt-2" {{ 'disabled' if not has_session else '' }}>
+                                <i class="bi bi-noise-reduction me-1"></i>Median Denoise
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Edge Detection Tools -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#edgesCollapse">
+                        <i class="bi bi-border-style me-2"></i>Edges (Lab 7)
+                    </button>
+                </h2>
+                <div id="edgesCollapse" class="accordion-collapse collapse" data-bs-parent="#toolsAccordion">
+                    <div class="accordion-body">
+                        <!-- Sobel Edge -->
+                        <form action="/process" method="POST">
+                            <input type="hidden" name="operation" value="edge_sobel">
+                            <label class="form-label">Sobel Kernel: <span class="range-value"><output id="sobelOutput">3</output></span></label>
+                            <input type="range" class="form-range" name="sobel_ksize" min="1" max="7" step="2" value="3" oninput="sobelOutput.value=this.value">
+                            <button type="submit" class="btn btn-process w-100 mt-2" {{ 'disabled' if not has_session else '' }}>
+                                <i class="bi bi-bounding-box me-1"></i>Sobel Edge Detection
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="page-header d-flex justify-content-between align-items-center">
+            <div>
+                <h1>Image Processing Dashboard</h1>
+                <p class="text-muted mb-0">Upload an image and apply multiple operations sequentially</p>
+            </div>
+            {% if has_session %}
+                <span class="status-badge"><i class="bi bi-check-circle me-1"></i>Image Loaded</span>
+            {% else %}
+                <span class="status-badge no-image"><i class="bi bi-image me-1"></i>No Image</span>
+            {% endif %}
+        </div>
+        
+        <div class="row g-4">
+            <!-- Original Image -->
+            <div class="col-lg-6">
+                <div class="image-card">
+                    <div class="image-card-header">
+                        <i class="bi bi-image me-2"></i>Original Image
+                    </div>
+                    <div class="image-card-body">
+                        {% if original_image %}
+                            <img src="{{ original_image }}" alt="Original Image">
+                        {% else %}
+                            <div class="placeholder-content">
+                                <i class="bi bi-image"></i>
+                                <p>Upload an image to get started</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Processed Image -->
+            <div class="col-lg-6">
+                <div class="image-card">
+                    <div class="image-card-header processed">
+                        <i class="bi bi-check-circle me-2"></i>Current Result
+                    </div>
+                    <div class="image-card-body">
+                        {% if processed_image %}
+                            <img src="{{ processed_image }}?t={{ range(1000000) | random }}" alt="Processed Image">
+                        {% else %}
+                            <div class="placeholder-content">
+                                <i class="bi bi-gear"></i>
+                                <p>Apply operations to see results</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Download Button -->
+        {% if processed_filename %}
+            <div class="text-center mt-4">
+                <a href="{{ url_for('download_file', filename=processed_filename) }}" class="btn-download">
+                    <i class="bi bi-download"></i>Download Current Result
+                </a>
+            </div>
+        {% endif %}
+    </main>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Auto-dismiss alerts after 4 seconds
+        setTimeout(() => {
+            document.querySelectorAll('.alert').forEach(alert => {
+                new bootstrap.Alert(alert).close();
+            });
+        }, 4000);
+        
+        // Remember which accordion tab was open
+        const ACCORDION_KEY = 'imagelab_accordion';
+        
+        // Restore last open accordion on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const lastOpen = localStorage.getItem(ACCORDION_KEY);
+            if (lastOpen) {
+                const collapseEl = document.getElementById(lastOpen);
+                if (collapseEl) {
+                    new bootstrap.Collapse(collapseEl, { show: true });
+                }
+            }
+        });
+        
+        // Save accordion state when changed
+        document.querySelectorAll('.accordion-collapse').forEach(collapse => {
+            collapse.addEventListener('shown.bs.collapse', function() {
+                localStorage.setItem(ACCORDION_KEY, this.id);
+            });
+        });
+    </script>
+</body>
+</html>
