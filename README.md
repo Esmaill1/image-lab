@@ -1,7 +1,7 @@
 
 # IMAGE-LAB
 [ main branch ](https://github.com/Esmaill1/image-lab/tree/main)
-## 🚀 Infrastructure & DevOps
+##  Infrastructure & DevOps
 
 This project is deployed using a production-grade CI/CD pipeline, ensuring consistent environments and zero-manual-effort updates.
 
