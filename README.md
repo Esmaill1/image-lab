@@ -6,7 +6,7 @@ The project is deployed on an AWS EC2 instance using a fully automated pipeline.
 
 * **Infrastructure:** Hosted on AWS EC2 (Ubuntu).
 * **Containerization:** The application runs inside a Docker container for environment consistency.
-* **CI/CD:** GitHub Actions detects changes to the `main` branch and executes `deploy.sh` via SSH (configured using Repository Secrets).
+* **CI/CD:** GitHub Actions detects changes to the [main](main) branch and executes [deploy.sh](deploy.sh) via SSH (configured using Repository Secrets).
 * **Networking & SSL:**
     * **Domain:** [imageprocessing.esmail.app](https://imageprocessing.esmail.app) configured via A Record.
     * **Reverse Proxy:** Nginx handles incoming traffic and forwards requests to the local Docker container on port 5000.
