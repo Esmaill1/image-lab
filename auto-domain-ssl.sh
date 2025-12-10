@@ -56,6 +56,9 @@ server {
 
     server_name $DOMAIN;
 
+    # Allow larger file uploads (e.g., 50MB) for images
+    client_max_body_size 50M;  # <--- CRITICAL FOR IMAGE APPS
+
     location / {
         proxy_pass $UPSTREAM;
         proxy_http_version 1.1;
@@ -68,6 +71,9 @@ server {
         # WebSocket support
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
+
+        # Increase timeout for long image processing tasks (e.g., 5 minutes)
+        proxy_read_timeout 300s;  # <--- RECOMMENDED FOR ML/AI
     }
 }
 EOF
