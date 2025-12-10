@@ -1,6 +1,6 @@
 
 # IMAGE-LAB
-[ main brach ](https://github.com/Esmaill1/image-lab/tree/main)
+[ main branch ](https://github.com/Esmaill1/image-lab/tree/main)
 ### Deployment & CI/CD Pipeline
 
 The project is deployed on an AWS EC2 instance using a fully automated pipeline.
