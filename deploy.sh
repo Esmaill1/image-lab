@@ -1,14 +1,6 @@
 #!/usr/bin/env bash
 set -e
 
-# Navigate to the project directory
-cd /home/ubuntu/imageprocessing-app
-
-# 1. Pull latest code
-git pull origin main
-
-# 2. Build the new Docker image
-echo "Building Docker image..."
 docker build -t image-lab:latest .
 
 # 3. Stop and remove the existing container (if it exists)
