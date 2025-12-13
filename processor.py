@@ -9,7 +9,7 @@ import numpy as np
 
 class ImageProcessor:
     """
-    A class to perform various image processing operations using OpenCV.
+   . A class to perform various image processing operations using OpenCV.
     
     Supported operations:
     - Geometric: resize, rotate
