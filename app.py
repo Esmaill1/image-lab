@@ -5,44 +5,78 @@ Supports persistent image sessions for multiple operations
 """
 
 import os
+import time
 import uuid
 import shutil
 import cv2
+import atexit
 from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory, session, jsonify
 from werkzeug.utils import secure_filename
+from apscheduler.schedulers.background import BackgroundScheduler
 from processor import ImageProcessor
+from config import Config
 
 # Initialize Flask app
 app = Flask(__name__)
-app.secret_key = 'online-image-lab-secret-key-2024'
-
-# Configuration
-UPLOAD_FOLDER = os.path.join('static', 'uploads')
-PROCESSED_FOLDER = os.path.join('static', 'processed')
-WORKING_FOLDER = os.path.join('static', 'working')
-PREVIEW_FOLDER = os.path.join('static', 'preview')
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'}
-PREVIEW_MAX_SIZE = 600  # Max dimension for preview images
-
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['PROCESSED_FOLDER'] = PROCESSED_FOLDER
-app.config['WORKING_FOLDER'] = WORKING_FOLDER
-app.config['PREVIEW_FOLDER'] = PREVIEW_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+app.config.from_object(Config)
 
 # Ensure upload directories exist
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(PROCESSED_FOLDER, exist_ok=True)
-os.makedirs(WORKING_FOLDER, exist_ok=True)
-os.makedirs(PREVIEW_FOLDER, exist_ok=True)
+for folder in [app.config['UPLOAD_FOLDER'], app.config['PROCESSED_FOLDER'], 
+               app.config['WORKING_FOLDER'], app.config['PREVIEW_FOLDER']]:
+    os.makedirs(folder, exist_ok=True)
+
+
+def cleanup_old_files():
+    """Delete files older than the configured max age."""
+    folders = [
+        app.config['UPLOAD_FOLDER'],
+        app.config['PROCESSED_FOLDER'],
+        app.config['WORKING_FOLDER'],
+        app.config['PREVIEW_FOLDER']
+    ]
+    
+    current_time = time.time()
+    max_age = app.config['FILE_MAX_AGE_SECONDS']
+    
+    print(f"Running cleanup task. Max age: {max_age}s")
+    
+    for folder in folders:
+        if not os.path.exists(folder):
+            continue
+            
+        for filename in os.listdir(folder):
+            file_path = os.path.join(folder, filename)
+            # Skip hidden files like .gitkeep
+            if filename.startswith('.'):
+                continue
+                
+            try:
+                file_age = current_time - os.path.getmtime(file_path)
+                if file_age > max_age:
+                    if os.path.isfile(file_path):
+                        os.remove(file_path)
+                        print(f"Deleted old file: {file_path}")
+            except Exception as e:
+                print(f"Error deleting {file_path}: {e}")
+
+# Initialize and start scheduler
+scheduler = BackgroundScheduler()
+scheduler.add_job(func=cleanup_old_files, trigger="interval", minutes=app.config['CLEANUP_INTERVAL_MINUTES'])
+scheduler.start()
+
+# Shut down the scheduler when exiting the app
+atexit.register(lambda: scheduler.shutdown())
 
 
 def allowed_file(filename: str) -> bool:
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
 
-def generate_unique_filename(original_filename: str) -> str:
-    ext = original_filename.rsplit('.', 1)[1].lower() if '.' in original_filename else 'png'
+def generate_unique_filename(original_filename: str, extension: str = None) -> str:
+    if extension:
+        ext = extension
+    else:
+        ext = original_filename.rsplit('.', 1)[1].lower() if '.' in original_filename else 'png'
     return f"{uuid.uuid4().hex}.{ext}"
 
 
@@ -53,8 +87,9 @@ def create_preview(source_path: str, preview_filename: str) -> str:
         return None
     
     h, w = img.shape[:2]
-    if max(h, w) > PREVIEW_MAX_SIZE:
-        scale = PREVIEW_MAX_SIZE / max(h, w)
+    max_size = app.config['PREVIEW_MAX_SIZE']
+    if max(h, w) > max_size:
+        scale = max_size / max(h, w)
         new_w, new_h = int(w * scale), int(h * scale)
         img = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_AREA)
     
@@ -142,6 +177,7 @@ def process_image():
     
     params = {}
     operation_display = operation.replace('_', ' ').title()
+    target_ext = None
     
     try:
         if operation == 'resize':
@@ -165,6 +201,11 @@ def process_image():
         elif operation == 'sharpen':
             params['strength'] = float(request.form.get('sharpen_strength', 1.0))
             operation_display = f"Sharpen ({params['strength']}x)"
+        elif operation == 'convert':
+            target_ext = request.form.get('format', 'png').lower()
+            if target_ext not in app.config['ALLOWED_EXTENSIONS']:
+                raise ValueError("Invalid target format")
+            operation_display = f"Convert to {target_ext.upper()}"
     except (ValueError, TypeError) as e:
         return jsonify({'success': False, 'error': f'Invalid parameter: {str(e)}'})
     
@@ -172,7 +213,12 @@ def process_image():
         processor = ImageProcessor(current_path)
         processor.process(operation, params)
         
-        ext = current_filename.rsplit('.', 1)[1] if '.' in current_filename else 'png'
+        # Determine new extension
+        if target_ext:
+            ext = target_ext
+        else:
+            ext = current_filename.rsplit('.', 1)[1] if '.' in current_filename else 'png'
+            
         new_working_filename = f"working_{uuid.uuid4().hex}.{ext}"
         new_working_path = os.path.join(app.config['WORKING_FOLDER'], new_working_filename)
         processor.save(new_working_path)

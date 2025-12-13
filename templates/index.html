@@ -440,6 +440,30 @@
                     </div>
                 </div>
             </div>
+
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#convertCollapse">
+                        <i class="bi bi-file-earmark-image me-2"></i>Convert Format
+                    </button>
+                </h2>
+                <div id="convertCollapse" class="accordion-collapse collapse" data-bs-parent="#toolsAccordion">
+                    <div class="accordion-body">
+                        <p class="text-muted small mb-3">Convert current image to another format</p>
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-process" onclick="applyOperation('convert', {format: 'png'})">
+                                <i class="bi bi-filetype-png me-1"></i>Convert to PNG
+                            </button>
+                            <button type="button" class="btn btn-process" onclick="applyOperation('convert', {format: 'jpg'})">
+                                <i class="bi bi-filetype-jpg me-1"></i>Convert to JPG
+                            </button>
+                            <button type="button" class="btn btn-process" onclick="applyOperation('convert', {format: 'webp'})">
+                                <i class="bi bi-filetype-key me-1"></i>Convert to WEBP
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </aside>
 
@@ -545,6 +569,22 @@
             if (!this.files || !this.files[0]) return;
             
             const file = this.files[0];
+            
+            // Client-side validation
+            const maxSize = 16 * 1024 * 1024; // 16MB
+            if (file.size > maxSize) {
+                showAlert('danger', 'File too large. Max size is 16MB.');
+                this.value = ''; // Clear input
+                return;
+            }
+            
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/bmp', 'image/webp'];
+            if (!allowedTypes.includes(file.type)) {
+                showAlert('danger', 'Invalid file type. Allowed: JPG, PNG, GIF, BMP, WEBP.');
+                this.value = ''; // Clear input
+                return;
+            }
+
             const formData = new FormData();
             formData.append('image', file);
             

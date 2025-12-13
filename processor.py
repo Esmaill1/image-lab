@@ -50,7 +50,8 @@ class ImageProcessor:
             'blur_gaussian': self._gaussian_blur,
             'denoise_median': self._median_blur,
             'edge_sobel': self._sobel_edge,
-            'sharpen': self._sharpen
+            'sharpen': self._sharpen,
+            'convert': self._convert
         }
         
         if operation not in operations:
@@ -285,3 +286,18 @@ class ImageProcessor:
         sharpened = np.clip(sharpened, 0, 255).astype(np.uint8)
         
         return sharpened
+
+    # ==================== Utility Operations ====================
+
+    def _convert(self, params: dict) -> np.ndarray:
+        """
+        Identity operation for format conversion.
+        The actual conversion happens during save() based on extension.
+        
+        Args:
+            params: Not used
+            
+        Returns:
+            Original image
+        """
+        return self.image
