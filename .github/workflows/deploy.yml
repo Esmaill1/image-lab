@@ -30,7 +30,7 @@ jobs:
             set -e
             
             # 1. Go to folder
-            cd /home/ubuntu/imag-lab
+            cd /home/ubuntu/image-lab
             
             # 2. Update the code (including the deploy.sh script itself!)
             git pull origin main
