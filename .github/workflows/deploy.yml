@@ -27,4 +27,16 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT }}
           script: |
-            bash ~/deploy.sh
+            set -e
+            
+            # 1. Go to folder
+            cd /home/ubuntu/imag-lab
+            
+            # 2. Update the code (including the deploy.sh script itself!)
+            git pull origin main
+            
+            # 3. Make sure the script is executable (just in case)
+            chmod +x deploy.sh
+            
+            # 4. Run the script
+            ./deploy.sh
