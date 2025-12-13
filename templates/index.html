@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Image Lab - Image Processing Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --sidebar-width: 320px;
+            --primary-color: #6366f1;
+            --primary-hover: #4f46e5;
+        }
+        
+        body {
+            background-color: #f8fafc;
+            min-height: 100vh;
+        }
+        
+        .sidebar {
+            width: var(--sidebar-width);
+            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+            min-height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .sidebar-header h4 { color: #fff; margin: 0; font-weight: 600; }
+        .sidebar-header small { color: #94a3b8; }
+        
+        .sidebar .accordion-item {
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .sidebar .accordion-button {
+            background: transparent;
+            color: #e2e8f0;
+            font-weight: 500;
+            padding: 1rem 1.5rem;
+            box-shadow: none;
+        }
+        
+        .sidebar .accordion-button:not(.collapsed) {
+            background: rgba(99, 102, 241, 0.1);
+            color: #a5b4fc;
+        }
+        
+        .sidebar .accordion-button::after { filter: invert(1); }
+        .sidebar .accordion-body { background: rgba(0,0,0,0.2); padding: 1rem 1.5rem; }
+        .sidebar .form-label { color: #94a3b8; font-size: 0.85rem; margin-bottom: 0.5rem; }
+        .sidebar .form-range { accent-color: var(--primary-color); }
+        
+        .sidebar .btn-process {
+            background: var(--primary-color);
+            border: none;
+            color: white;
+            padding: 0.6rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .sidebar .btn-process:hover { background: var(--primary-hover); transform: translateY(-1px); }
+        .sidebar .btn-process:disabled { background: #475569; cursor: not-allowed; transform: none; }
+        
+        .range-value {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .main-content { margin-left: var(--sidebar-width); padding: 2rem; }
+        .page-header { margin-bottom: 2rem; }
+        .page-header h1 { color: #1e293b; font-weight: 700; }
+        
+        .image-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            overflow: hidden;
+            height: 100%;
+        }
+        
+        .image-card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 0.8rem 1.2rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        
+        .image-card-header.processed {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+        
+        .image-card-body {
+            padding: 1rem;
+            min-height: 300px;
+            max-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f1f5f9;
+        }
+        
+        .image-card-body img {
+            max-width: 100%;
+            max-height: 350px;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+        
+        .placeholder-content { text-align: center; color: #94a3b8; }
+        .placeholder-content i { font-size: 3rem; margin-bottom: 0.5rem; }
+        
+        .upload-section { padding: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        
+        .upload-area {
+            border: 2px dashed rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .upload-area:hover { border-color: var(--primary-color); background: rgba(99, 102, 241, 0.1); }
+        .upload-area.has-image { border-color: #38ef7d; background: rgba(56, 239, 125, 0.1); }
+        .upload-area i { font-size: 2.5rem; color: #64748b; margin-bottom: 0.5rem; }
+        .upload-area.has-image i { color: #38ef7d; }
+        .upload-area p { color: #94a3b8; margin: 0; font-size: 0.9rem; }
+        .file-input { display: none; }
+        
+        /* Progress Bar */
+        .upload-progress {
+            margin-top: 1rem;
+            display: none;
+        }
+        
+        .upload-progress.active { display: block; }
+        
+        .progress {
+            height: 8px;
+            border-radius: 4px;
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .progress-bar {
+            background: linear-gradient(90deg, var(--primary-color), #38ef7d);
+            transition: width 0.3s;
+        }
+        
+        .progress-text {
+            color: #94a3b8;
+            font-size: 0.75rem;
+            margin-top: 0.3rem;
+        }
+        
+        /* Processing Overlay */
+        .processing-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            border-radius: 16px;
+        }
+        
+        .processing-overlay.active { display: flex; }
+        
+        .processing-spinner {
+            color: white;
+            font-size: 2rem;
+        }
+        
+        .session-controls {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .btn-reset, .btn-clear, .btn-undo {
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            flex: 1;
+            transition: all 0.2s;
+        }
+        
+        .btn-undo { background: #8b5cf6; }
+        .btn-undo:hover { background: #7c3aed; color: white; }
+        .btn-undo:disabled { background: #475569; cursor: not-allowed; }
+        .btn-reset { background: #f59e0b; }
+        .btn-reset:hover { background: #d97706; color: white; }
+        .btn-clear { background: #ef4444; }
+        .btn-clear:hover { background: #dc2626; color: white; }
+        
+        .operations-history {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .operations-history h6 {
+            color: #94a3b8;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.75rem;
+        }
+        
+        .operation-tag {
+            display: inline-block;
+            background: rgba(99, 102, 241, 0.2);
+            color: #a5b4fc;
+            padding: 0.25rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin: 0.2rem;
+        }
+        
+        .operations-list { counter-reset: op-counter; }
+        .operations-list .operation-tag { counter-increment: op-counter; }
+        .operations-list .operation-tag::before { content: counter(op-counter) ". "; }
+        
+        .alert-container {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1100;
+            max-width: 400px;
+        }
+        
+        .btn-download {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            border: none;
+            color: white;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+        
+        .btn-download:hover {
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(17, 153, 142, 0.4);
+        }
+        
+        .status-badge {
+            background: #22c55e;
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .status-badge.no-image { background: #64748b; }
+        
+        .image-card-wrapper { position: relative; }
+        
+        @media (max-width: 992px) {
+            .sidebar { width: 100%; position: relative; min-height: auto; }
+            .main-content { margin-left: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="alert-container" id="alertContainer"></div>
+
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h4><i class="bi bi-image me-2"></i>Image Lab</h4>
+            <small>Online Image Processing</small>
+        </div>
+        
+        <div class="upload-section">
+            <div class="upload-area" id="uploadArea" onclick="document.getElementById('imageInput').click()">
+                <i class="bi bi-cloud-arrow-up" id="uploadIcon"></i>
+                <p id="uploadText">Click to upload an image</p>
+            </div>
+            <input type="file" class="file-input" id="imageInput" accept="image/*">
+            <div class="upload-progress" id="uploadProgress">
+                <div class="progress">
+                    <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+                </div>
+                <div class="progress-text" id="progressText">Uploading... 0%</div>
+            </div>
+        </div>
+        
+        <div class="session-controls" id="sessionControls" style="display: none;">
+            <button type="button" class="btn btn-undo" id="undoBtn" disabled onclick="undoOperation()">
+                <i class="bi bi-arrow-left me-1"></i>Undo
+            </button>
+            <button type="button" class="btn btn-reset" onclick="resetImage()">
+                <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+            </button>
+            <button type="button" class="btn btn-clear" onclick="clearSession()">
+                <i class="bi bi-x-circle me-1"></i>Clear
+            </button>
+        </div>
+        
+        <div class="operations-history" id="historySection" style="display: none;">
+            <h6><i class="bi bi-clock-history me-1"></i>Applied Operations</h6>
+            <div class="operations-list" id="operationsList"></div>
+        </div>
+        
+        <div class="accordion" id="toolsAccordion">
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#geometryCollapse">
+                        <i class="bi bi-arrows-angle-expand me-2"></i>Geometry
+                    </button>
+                </h2>
+                <div id="geometryCollapse" class="accordion-collapse collapse" data-bs-parent="#toolsAccordion">
+                    <div class="accordion-body">
+                        <div class="mb-4">
+                            <label class="form-label">Resize Scale: <span class="range-value"><output id="scaleOutput">100</output>%</span></label>
+                            <input type="range" class="form-range" id="scaleInput" min="10" max="200" value="100" oninput="scaleOutput.value=this.value">
+                            <button type="button" class="btn btn-process w-100 mt-2" onclick="applyOperation('resize', {scale: scaleInput.value})">
+                                <i class="bi bi-aspect-ratio me-1"></i>Resize
+                            </button>
+                        </div>
+                        <div>
+                            <label class="form-label">Rotation Angle: <span class="range-value"><output id="angleOutput">0</output>°</span></label>
+                            <input type="range" class="form-range" id="angleInput" min="0" max="360" value="0" oninput="angleOutput.value=this.value">
+                            <button type="button" class="btn btn-process w-100 mt-2" onclick="applyOperation('rotate', {angle: angleInput.value})">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Rotate
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#enhancementCollapse">
+                        <i class="bi bi-brightness-high me-2"></i>Enhancement
+                    </button>
+                </h2>
+                <div id="enhancementCollapse" class="accordion-collapse collapse" data-bs-parent="#toolsAccordion">
+                    <div class="accordion-body">
+                        <div class="mb-4">
+                            <p class="text-muted small">Equalizes histogram for better contrast</p>
+                            <button type="button" class="btn btn-process w-100" onclick="applyOperation('hist_eq', {})">
+                                <i class="bi bi-bar-chart me-1"></i>Histogram Equalization
+                            </button>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label">Brightness: <span class="range-value"><output id="brightnessOutput">0</output></span></label>
+                            <input type="range" class="form-range" id="brightnessInput" min="-100" max="100" value="0" oninput="brightnessOutput.value=this.value">
+                            <button type="button" class="btn btn-process w-100 mt-2" onclick="applyOperation('brightness', {brightness_value: brightnessInput.value})">
+                                <i class="bi bi-sun me-1"></i>Adjust Brightness
+                            </button>
+                        </div>
+                        <div>
+                            <p class="text-muted small">Inverts all colors (255 - pixel)</p>
+                            <button type="button" class="btn btn-process w-100" onclick="applyOperation('negative', {})">
+                                <i class="bi bi-circle-half me-1"></i>Negative
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#filtersCollapse">
+                        <i class="bi bi-funnel me-2"></i>Filters
+                    </button>
+                </h2>
+                <div id="filtersCollapse" class="accordion-collapse collapse" data-bs-parent="#toolsAccordion">
+                    <div class="accordion-body">
+                        <div class="mb-4">
+                            <label class="form-label">Kernel Size: <span class="range-value"><output id="gaussianOutput">5</output></span></label>
+                            <input type="range" class="form-range" id="gaussianInput" min="1" max="31" step="2" value="5" oninput="gaussianOutput.value=this.value">
+                            <button type="button" class="btn btn-process w-100 mt-2" onclick="applyOperation('blur_gaussian', {gaussian_kernel: gaussianInput.value})">
+                                <i class="bi bi-droplet me-1"></i>Gaussian Blur
+                            </button>
+                        </div>
+                        <div>
+                            <label class="form-label">Kernel Size: <span class="range-value"><output id="medianOutput">5</output></span></label>
+                            <input type="range" class="form-range" id="medianInput" min="1" max="31" step="2" value="5" oninput="medianOutput.value=this.value">
+                            <button type="button" class="btn btn-process w-100 mt-2" onclick="applyOperation('denoise_median', {median_kernel: medianInput.value})">
+                                <i class="bi bi-noise-reduction me-1"></i>Median Denoise
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#edgesCollapse">
+                        <i class="bi bi-border-style me-2"></i>Edges
+                    </button>
+                </h2>
+                <div id="edgesCollapse" class="accordion-collapse collapse" data-bs-parent="#toolsAccordion">
+                    <div class="accordion-body">
+                        <div class="mb-4">
+                            <label class="form-label">Sobel Kernel: <span class="range-value"><output id="sobelOutput">3</output></span></label>
+                            <input type="range" class="form-range" id="sobelInput" min="1" max="7" step="2" value="3" oninput="sobelOutput.value=this.value">
+                            <button type="button" class="btn btn-process w-100 mt-2" onclick="applyOperation('edge_sobel', {sobel_ksize: sobelInput.value})">
+                                <i class="bi bi-bounding-box me-1"></i>Sobel Edge Detection
+                            </button>
+                        </div>
+                        <div>
+                            <label class="form-label">Sharpen Strength: <span class="range-value"><output id="sharpenOutput">1.0</output>x</span></label>
+                            <input type="range" class="form-range" id="sharpenInput" min="0.5" max="3" step="0.1" value="1.0" oninput="sharpenOutput.value=this.value">
+                            <p class="text-muted small">Uses Laplacian edge enhancement</p>
+                            <button type="button" class="btn btn-process w-100 mt-2" onclick="applyOperation('sharpen', {sharpen_strength: sharpenInput.value})">
+                                <i class="bi bi-lightning me-1"></i>Sharpen Image
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <div class="page-header d-flex justify-content-between align-items-center">
+            <div>
+                <h1>Image Processing Dashboard</h1>
+                <p class="text-muted mb-0">Upload an image and apply multiple operations</p>
+            </div>
+            <span class="status-badge no-image" id="statusBadge"><i class="bi bi-image me-1"></i>No Image</span>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-lg-6">
+                <div class="image-card-wrapper">
+                    <div class="image-card">
+                        <div class="image-card-header">
+                            <i class="bi bi-image me-2"></i>Original Image
+                        </div>
+                        <div class="image-card-body" id="originalImageContainer">
+                            <div class="placeholder-content">
+                                <i class="bi bi-image"></i>
+                                <p>Upload an image to get started</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-6">
+                <div class="image-card-wrapper">
+                    <div class="image-card">
+                        <div class="image-card-header processed">
+                            <i class="bi bi-check-circle me-2"></i>Current Result
+                        </div>
+                        <div class="image-card-body" id="processedImageContainer">
+                            <div class="placeholder-content">
+                                <i class="bi bi-gear"></i>
+                                <p>Apply operations to see results</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="processing-overlay" id="processingOverlay">
+                        <div class="spinner-border processing-spinner" role="status">
+                            <span class="visually-hidden">Processing...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mt-4" id="downloadSection" style="display: none;">
+            <a href="#" class="btn-download" id="downloadBtn">
+                <i class="bi bi-download"></i>Download Current Result
+            </a>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        let hasSession = {{ 'true' if has_session else 'false' }};
+        let downloadUrl = '{{ url_for("download_file", filename=processed_filename) if processed_filename else "" }}';
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            if (hasSession) {
+                updateUIForSession();
+                {% if operations_history %}
+                document.getElementById('undoBtn').disabled = false;
+                {% endif %}
+            }
+            
+            // Restore accordion state
+            const lastOpen = localStorage.getItem('imagelab_accordion');
+            if (lastOpen) {
+                const collapseEl = document.getElementById(lastOpen);
+                if (collapseEl) new bootstrap.Collapse(collapseEl, { show: true });
+            }
+            
+            // Save accordion state
+            document.querySelectorAll('.accordion-collapse').forEach(collapse => {
+                collapse.addEventListener('shown.bs.collapse', function() {
+                    localStorage.setItem('imagelab_accordion', this.id);
+                });
+            });
+            
+            // Load initial images if session exists
+            {% if original_image %}
+            document.getElementById('originalImageContainer').innerHTML = '<img src="{{ original_image }}" alt="Original">';
+            {% endif %}
+            {% if processed_image %}
+            document.getElementById('processedImageContainer').innerHTML = '<img src="{{ processed_image }}" alt="Processed">';
+            document.getElementById('downloadSection').style.display = 'block';
+            {% endif %}
+            {% if operations_history %}
+            updateOperationsHistory({{ operations_history | tojson }});
+            {% endif %}
+        });
+        
+        // File upload with progress
+        document.getElementById('imageInput').addEventListener('change', function(e) {
+            if (!this.files || !this.files[0]) return;
+            
+            const file = this.files[0];
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            const xhr = new XMLHttpRequest();
+            const progressDiv = document.getElementById('uploadProgress');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            
+            progressDiv.classList.add('active');
+            
+            xhr.upload.addEventListener('progress', function(e) {
+                if (e.lengthComputable) {
+                    const percent = Math.round((e.loaded / e.total) * 100);
+                    progressBar.style.width = percent + '%';
+                    progressText.textContent = 'Uploading... ' + percent + '%';
+                }
+            });
+            
+            xhr.addEventListener('load', function() {
+                progressDiv.classList.remove('active');
+                progressBar.style.width = '0%';
+                
+                if (xhr.status === 200) {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response.success) {
+                        hasSession = true;
+                        updateUIForSession();
+                        document.getElementById('originalImageContainer').innerHTML = 
+                            '<img src="' + response.original_image + '" alt="Original">';
+                        document.getElementById('processedImageContainer').innerHTML = 
+                            '<img src="' + response.processed_image + '" alt="Processed">';
+                        showAlert('success', response.message);
+                        updateOperationsHistory([]);
+                        document.getElementById('undoBtn').disabled = true;
+                        document.getElementById('downloadSection').style.display = 'none';
+                    } else {
+                        showAlert('danger', response.error);
+                    }
+                }
+            });
+            
+            xhr.addEventListener('error', function() {
+                progressDiv.classList.remove('active');
+                showAlert('danger', 'Upload failed');
+            });
+            
+            xhr.open('POST', '/upload');
+            xhr.send(formData);
+        });
+        
+        function applyOperation(operation, params) {
+            if (!hasSession) {
+                showAlert('warning', 'Please upload an image first');
+                return;
+            }
+            
+            const overlay = document.getElementById('processingOverlay');
+            overlay.classList.add('active');
+            
+            const formData = new FormData();
+            formData.append('operation', operation);
+            for (const key in params) {
+                formData.append(key, params[key]);
+            }
+            
+            fetch('/process', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                overlay.classList.remove('active');
+                if (data.success) {
+                    document.getElementById('processedImageContainer').innerHTML = 
+                        '<img src="' + data.processed_image + '?t=' + Date.now() + '" alt="Processed">';
+                    updateOperationsHistory(data.operations_history);
+                    document.getElementById('undoBtn').disabled = !data.can_undo;
+                    downloadUrl = data.download_url;
+                    document.getElementById('downloadBtn').href = downloadUrl;
+                    document.getElementById('downloadSection').style.display = 'block';
+                    showAlert('success', 'Applied: ' + data.operation);
+                } else {
+                    showAlert('danger', data.error);
+                }
+            })
+            .catch(err => {
+                overlay.classList.remove('active');
+                showAlert('danger', 'Processing failed');
+            });
+        }
+        
+        function undoOperation() {
+            const overlay = document.getElementById('processingOverlay');
+            overlay.classList.add('active');
+            
+            fetch('/undo', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                overlay.classList.remove('active');
+                if (data.success) {
+                    document.getElementById('processedImageContainer').innerHTML = 
+                        '<img src="' + data.processed_image + '?t=' + Date.now() + '" alt="Processed">';
+                    updateOperationsHistory(data.operations_history);
+                    document.getElementById('undoBtn').disabled = !data.can_undo;
+                    showAlert('success', 'Undone: ' + data.undone_operation);
+                } else {
+                    showAlert('danger', data.error);
+                }
+            });
+        }
+        
+        function resetImage() {
+            fetch('/reset', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('processedImageContainer').innerHTML = 
+                        '<img src="' + data.processed_image + '?t=' + Date.now() + '" alt="Processed">';
+                    updateOperationsHistory([]);
+                    document.getElementById('undoBtn').disabled = true;
+                    document.getElementById('downloadSection').style.display = 'none';
+                    showAlert('success', 'Image reset to original');
+                } else {
+                    showAlert('danger', data.error);
+                }
+            });
+        }
+        
+        function clearSession() {
+            fetch('/clear', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    hasSession = false;
+                    updateUIForNoSession();
+                    document.getElementById('originalImageContainer').innerHTML = 
+                        '<div class="placeholder-content"><i class="bi bi-image"></i><p>Upload an image to get started</p></div>';
+                    document.getElementById('processedImageContainer').innerHTML = 
+                        '<div class="placeholder-content"><i class="bi bi-gear"></i><p>Apply operations to see results</p></div>';
+                    updateOperationsHistory([]);
+                    showAlert('info', 'Session cleared');
+                }
+            });
+        }
+        
+        function updateUIForSession() {
+            document.getElementById('uploadArea').classList.add('has-image');
+            document.getElementById('uploadIcon').className = 'bi bi-check-circle';
+            document.getElementById('uploadText').textContent = 'Image loaded - Click to replace';
+            document.getElementById('sessionControls').style.display = 'flex';
+            document.getElementById('statusBadge').className = 'status-badge';
+            document.getElementById('statusBadge').innerHTML = '<i class="bi bi-check-circle me-1"></i>Image Loaded';
+        }
+        
+        function updateUIForNoSession() {
+            document.getElementById('uploadArea').classList.remove('has-image');
+            document.getElementById('uploadIcon').className = 'bi bi-cloud-arrow-up';
+            document.getElementById('uploadText').textContent = 'Click to upload an image';
+            document.getElementById('sessionControls').style.display = 'none';
+            document.getElementById('downloadSection').style.display = 'none';
+            document.getElementById('statusBadge').className = 'status-badge no-image';
+            document.getElementById('statusBadge').innerHTML = '<i class="bi bi-image me-1"></i>No Image';
+        }
+        
+        function updateOperationsHistory(history) {
+            const section = document.getElementById('historySection');
+            const list = document.getElementById('operationsList');
+            
+            if (history && history.length > 0) {
+                section.style.display = 'block';
+                list.innerHTML = history.map(op => '<span class="operation-tag">' + op + '</span>').join('');
+            } else {
+                section.style.display = 'none';
+                list.innerHTML = '';
+            }
+        }
+        
+        function showAlert(type, message) {
+            const container = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-' + type + ' alert-dismissible fade show';
+            alert.innerHTML = message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+            container.appendChild(alert);
+            
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    new bootstrap.Alert(alert).close();
+                }
+            }, 4000);
+        }
+    </script>
+</body>
+</html>
