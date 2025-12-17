@@ -30,4 +30,4 @@ ENV FLASK_RUN_HOST=0.0.0.0
 EXPOSE 5000
 
 # Default command: run Flask development server listening on 0.0.0.0
-CMD ["flask", "run", "--host=0.0.0.0", "--port=5000"]
+CMD ["newrelic-admin", "run-program", "flask", "run", "--host=0.0.0.0", "--port=5000"]
