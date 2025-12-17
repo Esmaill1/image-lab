@@ -13,6 +13,11 @@ on:
 
 jobs:
   deploy:
+    env:
+  
+    # This maps the GitHub Secret to an Environment Variable the script can see
+      NEW_RELIC_LICENSE_KEY: ${{ secrets.NEW_RELIC_LICENSE_KEY }}
+      NEW_RELIC_APP_NAME: "Online-Image-Lab"
     runs-on: ubuntu-latest
 
     steps:
