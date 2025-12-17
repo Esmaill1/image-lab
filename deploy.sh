@@ -14,6 +14,9 @@ docker rm image-lab-container || true
 echo "Starting new container..."
 docker run -d \
   --name image-lab-container \
+      -e NEW_RELIC_LICENSE_KEY=${{ secrets.NEW_RELIC_LICENSE_KEY }} \
+      -e NEW_RELIC_APP_NAME='image' \
+      -p 5000:5000 \
   --restart unless-stopped \
   -p 5000:5000 \
   image-lab:latest
