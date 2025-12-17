@@ -26,23 +26,21 @@ jobs:
 
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.0
+        env:
+          # Define them here for the runner
+          NEW_RELIC_LICENSE_KEY: ${{ secrets.NEW_RELIC_LICENSE_KEY }}
+          NEW_RELIC_APP_NAME: "Online-Image-Lab"
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT }}
+          # IMPORTANT: List which variables to send to the VPS
+          envs: NEW_RELIC_LICENSE_KEY,NEW_RELIC_APP_NAME
           script: |
             set -e
-            
-            # 1. Go to folder
             cd /home/ubuntu/image-lab
-            
-            # 2. Update the code (including the deploy.sh script itself!)
             git fetch origin
             git reset --hard origin/main
-            
-            # 3. Make sure the script is executable (just in case)
             chmod +x deploy.sh
-            
-            # 4. Run the script
             ./deploy.sh
