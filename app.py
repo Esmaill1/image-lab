@@ -1,7 +1,7 @@
 """
 Flask Web Server for Online Image Lab
 Handles file uploads and image processing requests
-Supports. persistent image sessions for multiple operations
+Supports persistent image sessions for multiple operations
 """
 
 import os
@@ -12,6 +12,7 @@ import cv2
 import atexit
 from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory, session, jsonify
 from werkzeug.utils import secure_filename
+from werkzeug.middleware.proxy_fix import ProxyFix
 from apscheduler.schedulers.background import BackgroundScheduler
 from processor import ImageProcessor
 from config import Config
@@ -19,6 +20,9 @@ from config import Config
 # Initialize Flask app
 app = Flask(__name__)
 app.config.from_object(Config)
+
+# Trust X-Forwarded headers from Cloudflare tunnel / reverse proxy
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
 
 # Ensure upload directories exist
 for folder in [app.config['UPLOAD_FOLDER'], app.config['PROCESSED_FOLDER'], 
@@ -96,6 +100,11 @@ def create_preview(source_path: str, preview_filename: str) -> str:
     preview_path = os.path.join(app.config['PREVIEW_FOLDER'], preview_filename)
     cv2.imwrite(preview_path, img, [cv2.IMWRITE_JPEG_QUALITY, 85])
     return url_for('static', filename=f'preview/{preview_filename}')
+
+
+@app.route('/health')
+def health():
+    return "ok", 200
 
 
 @app.route('/')

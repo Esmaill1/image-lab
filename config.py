@@ -3,6 +3,9 @@ import os
 class Config:
     """Base configuration."""
     SECRET_KEY = 'online-image-lab-secret-key-2024'
+    PREFERRED_URL_SCHEME = 'https'
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
     UPLOAD_FOLDER = os.path.join('static', 'uploads')
     PROCESSED_FOLDER = os.path.join('static', 'processed')
     WORKING_FOLDER = os.path.join('static', 'working')
