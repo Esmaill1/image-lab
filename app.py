@@ -1,7 +1,7 @@
 """
 Flask Web Server for Online Image Lab
 Handles file uploads and image processing requests
-Supports persistent image sessions for multiple operations
+Supports. persistent image sessions for multiple operations
 """
 
 import os
