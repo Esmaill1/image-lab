@@ -1,5 +1,5 @@
 # Online Image Lab
-
+.
 A web-based image processing application demonstrating fundamental computer vision techniques using Python, Flask, and OpenCV.
 
 ## Features
